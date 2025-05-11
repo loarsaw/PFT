@@ -1,14 +1,16 @@
 version: "3.9"
+
 services:
-  image: mongo:4.4
-  container_name: mongo-main
-  restart: unless-stopped
-  ports:
-    - "27017:27017"
-  volumes:
-    - mongo-main-data:/data/db
-  networks:
-    - micro-net
+  mongo-main:
+    image: mongo:4.4
+    container_name: mongo-main
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-main-data:/data/db
+    networks:
+      - micro-net
 
   backend:
     build: ./backend

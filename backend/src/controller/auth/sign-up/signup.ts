@@ -7,8 +7,8 @@ const SALT_ROUNDS = 10;
 
 export const signup = async (req: Request, res: Response) => {
     try {
-        const { name, email, password } = req.body;
-        if (!name || !email || !password) {
+        const { email, password } = req.body;
+        if (!email || !password) {
             res.status(400).json({ message: "Missing fields" });
         }
 
@@ -23,7 +23,7 @@ export const signup = async (req: Request, res: Response) => {
 
         const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
         const uuid = uuidv4();
-        await publicCollection.insertOne({ name, email, createdAt: new Date(), uid: uuid, verified: false });
+        await publicCollection.insertOne({ email, createdAt: new Date(), uid: uuid, verified: false });
         await privateCollection.insertOne({ email, password: hashedPassword, uid: uuid, createdAt: new Date() });
 
         res.status(201).json({ message: "User created successfully" });

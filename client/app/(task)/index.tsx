@@ -3,7 +3,7 @@ import TaskItem from "@/components/TaskItem";
 import { Task } from "@/types/type";
 import axiosInstance from "@/utils/axiosInstance";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   StyleSheet,
   View,
@@ -15,6 +15,7 @@ import {
   StatusBar,
 } from "react-native";
 import { useSelector } from "react-redux";
+
 
 const TaskList: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -34,11 +35,12 @@ const TaskList: React.FC = () => {
   const [currentTask, setCurrentTask] = useState<Task>(emptyTask);
   const userData = useSelector((state: any) => state.user);
   const router = useRouter();
+
   useEffect(() => {
     fetchTasks();
   }, [router]);
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     try {
       const response = await axiosInstance.get("/tasks", {
         params: { ownerId: userData?.user.uid },
@@ -60,9 +62,9 @@ const TaskList: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userData?.user.uid]);
 
-  const addTask = async (task: Task) => {
+  const addTask = useCallback(async (task: Task) => {
     try {
       const response = await axiosInstance.post("/tasks", {
         title: task.title,
@@ -75,9 +77,9 @@ const TaskList: React.FC = () => {
     } catch (error) {
       console.error("Error adding task:", error);
     }
-  };
+  }, [userData?.user.uid]);
 
-  const updateTask = async (task: Task) => {
+  const updateTask = useCallback(async (task: Task) => {
     try {
       const response = await axiosInstance.put(`/tasks/${task.taskId}`, task);
       const updatedTask: Task = response.data;
@@ -88,14 +90,11 @@ const TaskList: React.FC = () => {
     } catch (error) {
       console.error("Error updating task:", error);
     }
-  };
+  }, []);
 
-  const deleteTask = (taskId: string) => {
+  const deleteTask = useCallback((taskId: string) => {
     Alert.alert("Delete Task", "Are you sure you want to delete this task?", [
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
+      { text: "Cancel", style: "cancel" },
       {
         text: "Delete",
         style: "destructive",
@@ -111,9 +110,9 @@ const TaskList: React.FC = () => {
         },
       },
     ]);
-  };
+  }, []);
 
-  const toggleTaskStatus = async (taskId: string) => {
+  const toggleTaskStatus = useCallback(async (taskId: string) => {
     try {
       const response = await axiosInstance.put(`/tasks/${taskId}/toggle`);
       const updatedTask: Task = response.data;
@@ -124,25 +123,34 @@ const TaskList: React.FC = () => {
     } catch (error) {
       console.error("Error toggling status:", error);
     }
-  };
+  }, []);
 
-  const handleSubmit = (task: Task) => {
-    if (task.taskId) {
-      updateTask(task);
-    } else {
-      addTask(task);
-    }
-  };
+  const handleSubmit = useCallback(
+    (task: Task) => {
+      if (task.taskId) {
+        updateTask(task);
+      } else {
+        addTask(task);
+      }
+    },
+    [addTask, updateTask]
+  );
 
-  const handleEditPress = (task: Task) => {
+  const handleEditPress = useCallback((task: Task) => {
     setCurrentTask(task);
     setModalVisible(true);
-  };
+  }, []);
 
-  const handleAddPress = () => {
+  const handleAddPress = useCallback(() => {
     setCurrentTask({ ...emptyTask, ownerId: userData?.user.uid });
     setModalVisible(true);
-  };
+  }, [userData?.user.uid]);
+
+  const stats = useMemo(() => {
+    const completed = tasks.filter((t) => t.status).length;
+    const pending = tasks.length - completed;
+    return { total: tasks.length, completed, pending };
+  }, [tasks]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -153,9 +161,7 @@ const TaskList: React.FC = () => {
 
       <View style={styles.stats}>
         <Text style={styles.statsText}>
-          Total: {tasks.length} | Completed:{" "}
-          {tasks.filter((task) => task.status).length} | Pending:{" "}
-          {tasks.filter((task) => !task.status).length}
+          Total: {stats.total} | Completed: {stats.completed} | Pending: {stats.pending}
         </Text>
       </View>
 
@@ -195,6 +201,7 @@ const TaskList: React.FC = () => {
     </SafeAreaView>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f5f5f5" },

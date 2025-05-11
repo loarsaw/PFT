@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
-import { getMongoDBInstance } from "../../config/mongodb";
+import { getMongoDBInstance } from "../../../config/mongodb";
 import { v4 as uuidv4 } from 'uuid';
 const SALT_ROUNDS = 10;
 

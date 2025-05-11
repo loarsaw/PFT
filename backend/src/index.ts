@@ -9,6 +9,9 @@ app.use(json())
 app.use(cors())
 const PORT = process.env.PORT;
 
+app.get("/", (req: Request, res: Response) => {
+  res.json({ msg: "Active" })
+})
 
 app.use("/api", router)
 app.listen(PORT, () => {

@@ -34,6 +34,13 @@ function RootLayout() {
               title: "Home",
             }}
           />
+           <Stack.Screen
+            name="(task)"
+            options={{
+              headerShown: false,
+              title: "Task",
+            }}
+          />
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>

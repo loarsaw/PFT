@@ -22,12 +22,7 @@ export default function StackLayout() {
         }}
       />
 
-      <Stack.Screen
-        name="signup"
-        options={{
-          title: "SignUp",
-        }}
-      />
+     
     </Stack>
   );
 }

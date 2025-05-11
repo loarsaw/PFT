@@ -1,3 +1,4 @@
+import { Task } from "@/types/type";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -11,11 +12,7 @@ import {
   View,
 } from "react-native";
 
-interface Task {
-  id: string;
-  title: string;
-  completed: boolean;
-}
+
 
 interface TaskFormProps {
   visible: boolean;
@@ -31,12 +28,12 @@ const TaskForm: React.FC<TaskFormProps> = ({
   initialValue,
 }) => {
   const [title, setTitle] = useState(initialValue.title);
-  const [completed, setCompleted] = useState(initialValue.completed);
-  const isEditing = initialValue.id !== "";
+  const [completed, setCompleted] = useState(initialValue.status);
+  const isEditing = initialValue.taskId !== "";
 
   useEffect(() => {
     setTitle(initialValue.title);
-    setCompleted(initialValue.completed);
+    setCompleted(initialValue.status);
   }, [initialValue]);
 
   const handleSubmit = () => {
@@ -48,7 +45,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     onSubmit({
       ...initialValue,
       title: title.trim(),
-      completed,
+      status:completed,
     });
 
     setTitle("");

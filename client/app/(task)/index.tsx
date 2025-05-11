@@ -1,6 +1,8 @@
 import TaskForm from "@/components/TaskForm";
 import TaskItem from "@/components/TaskItem";
+import { Task } from "@/types/type";
 import axiosInstance from "@/utils/axiosInstance";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
@@ -14,26 +16,27 @@ import {
 } from "react-native";
 import { useSelector } from "react-redux";
 
-interface Task {
-  id: string;
-  title: string;
-  completed: boolean;
-}
-
 const TaskList: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
-  const [currentTask, setCurrentTask] = useState<Task>({
-    id: "",
+
+  const emptyTask: Task = {
+    _id: "",
+    taskId: "",
     title: "",
-    completed: false,
-  });
+    status: false,
+    ownerId: "",
+    createdAt: "",
+    updatedAt: "",
+  };
+
+  const [currentTask, setCurrentTask] = useState<Task>(emptyTask);
   const userData = useSelector((state: any) => state.user);
-  console.log(userData, "userData");
+  const router = useRouter();
   useEffect(() => {
     fetchTasks();
-  }, []);
+  }, [router]);
 
   const fetchTasks = async () => {
     try {
@@ -41,10 +44,14 @@ const TaskList: React.FC = () => {
         params: { ownerId: userData?.user.uid },
       });
 
-      const normalizedTasks = response.data.tasks.map((t: any) => ({
-        id: t.taskId,
+      const normalizedTasks: Task[] = response.data.tasks.map((t: any) => ({
+        _id: t._id,
+        taskId: t.taskId,
         title: t.title,
-        completed: t.status === "done",
+        status: t.status,
+        ownerId: t.ownerId,
+        createdAt: t.createdAt,
+        updatedAt: t.updatedAt,
       }));
 
       setTasks(normalizedTasks);
@@ -59,9 +66,12 @@ const TaskList: React.FC = () => {
     try {
       const response = await axiosInstance.post("/tasks", {
         title: task.title,
-        completed: task.completed,
+        ownerId: userData?.user.uid,
+        status: task.status,
       });
-      setTasks((prevTasks) => [...prevTasks, response.data]);
+
+      const newTask: Task = response.data;
+      setTasks((prevTasks) => [...prevTasks, newTask]);
     } catch (error) {
       console.error("Error adding task:", error);
     }
@@ -69,9 +79,11 @@ const TaskList: React.FC = () => {
 
   const updateTask = async (task: Task) => {
     try {
-      const response = await axiosInstance.put(`/tasks/${task.id}`, task);
+      const response = await axiosInstance.put(`/tasks/${task.taskId}`, task);
+      const updatedTask: Task = response.data;
+
       setTasks((prevTasks) =>
-        prevTasks.map((t) => (t.id === task.id ? response.data : t))
+        prevTasks.map((t) => (t.taskId === task.taskId ? updatedTask : t))
       );
     } catch (error) {
       console.error("Error updating task:", error);
@@ -91,7 +103,7 @@ const TaskList: React.FC = () => {
           try {
             await axiosInstance.delete(`/tasks/${taskId}`);
             setTasks((prevTasks) =>
-              prevTasks.filter((task) => task.id !== taskId)
+              prevTasks.filter((task) => task.taskId !== taskId)
             );
           } catch (error) {
             console.error("Error deleting task:", error);
@@ -104,8 +116,10 @@ const TaskList: React.FC = () => {
   const toggleTaskStatus = async (taskId: string) => {
     try {
       const response = await axiosInstance.put(`/tasks/${taskId}/toggle`);
+      const updatedTask: Task = response.data;
+
       setTasks((prevTasks) =>
-        prevTasks.map((t) => (t.id === taskId ? response.data : t))
+        prevTasks.map((t) => (t.taskId === taskId ? updatedTask : t))
       );
     } catch (error) {
       console.error("Error toggling status:", error);
@@ -113,7 +127,7 @@ const TaskList: React.FC = () => {
   };
 
   const handleSubmit = (task: Task) => {
-    if (task.id) {
+    if (task.taskId) {
       updateTask(task);
     } else {
       addTask(task);
@@ -126,14 +140,13 @@ const TaskList: React.FC = () => {
   };
 
   const handleAddPress = () => {
-    setCurrentTask({ id: "", title: "", completed: false });
+    setCurrentTask({ ...emptyTask, ownerId: userData?.user.uid });
     setModalVisible(true);
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Task Manager</Text>
       </View>
@@ -141,8 +154,8 @@ const TaskList: React.FC = () => {
       <View style={styles.stats}>
         <Text style={styles.statsText}>
           Total: {tasks.length} | Completed:{" "}
-          {tasks.filter((task) => task.completed).length} | Pending:{" "}
-          {tasks.filter((task) => !task.completed).length}
+          {tasks.filter((task) => task.status).length} | Pending:{" "}
+          {tasks.filter((task) => !task.status).length}
         </Text>
       </View>
 
@@ -154,12 +167,12 @@ const TaskList: React.FC = () => {
         renderItem={({ item }: { item: Task }) => (
           <TaskItem
             task={item}
-            onToggleStatus={toggleTaskStatus}
-            onEditPress={handleEditPress}
-            onDeletePress={deleteTask}
+            onToggleStatus={() => toggleTaskStatus(item.taskId)}
+            onEditPress={() => handleEditPress(item)}
+            onDeletePress={() => deleteTask(item.taskId)}
           />
         )}
-        keyExtractor={(item: Task) => item.id}
+        keyExtractor={(item: Task) => item.taskId}
         ListEmptyComponent={
           <View style={styles.emptyListContainer}>
             <Text style={styles.emptyListText}>
@@ -184,10 +197,7 @@ const TaskList: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
+  container: { flex: 1, backgroundColor: "#f5f5f5" },
   header: {
     backgroundColor: "#4a6da7",
     paddingVertical: 15,
@@ -204,74 +214,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#e0e0e0",
   },
-  statsText: {
-    fontSize: 12,
-    color: "#666",
-  },
-  list: {
-    flex: 1,
-  },
-  taskItem: {
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    marginHorizontal: 15,
-    marginTop: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  statusButton: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: "#4a6da7",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 10,
-  },
-  completedStatus: {
-    backgroundColor: "#4a6da7",
-  },
-  checkmark: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  taskText: {
-    flex: 1,
-    fontSize: 16,
-  },
-  completedText: {
-    textDecorationLine: "line-through",
-    color: "#999",
-  },
-  actionsContainer: {
-    flexDirection: "row",
-  },
-  editButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    backgroundColor: "#e0e0e0",
-    borderRadius: 4,
-    marginRight: 5,
-  },
-  editButtonText: {
-    color: "#333",
-  },
-  deleteButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    backgroundColor: "#ff6b6b",
-    borderRadius: 4,
-  },
-  deleteButtonText: {
-    color: "#fff",
-  },
+  statsText: { fontSize: 12, color: "#666" },
+  list: { flex: 1 },
   addButton: {
     position: "absolute",
     right: 20,
@@ -288,72 +232,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 5,
   },
-  addButtonText: {
-    color: "#fff",
-    fontSize: 32,
-    fontWeight: "bold",
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  formContainer: {
-    width: "80%",
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 5,
-  },
-  formTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 15,
-    textAlign: "center",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 15,
-    fontSize: 16,
-  },
-  statusContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  statusLabel: {
-    marginRight: 10,
-    fontSize: 16,
-  },
-  formButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  button: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    width: "48%",
-    alignItems: "center",
-  },
-  cancelButton: {
-    backgroundColor: "#e0e0e0",
-  },
-  submitButton: {
-    backgroundColor: "#4a6da7",
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
+  addButtonText: { color: "#fff", fontSize: 32, fontWeight: "bold" },
   emptyListContainer: {
     flex: 1,
     justifyContent: "center",

@@ -1,11 +1,14 @@
-
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 
 interface Task {
-  id: string;
+  _id: string;
+  taskId: string;
   title: string;
-  completed: boolean;
+  status: boolean;
+  ownerId: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface TaskItemProps {
@@ -24,13 +27,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <View style={styles.taskItem}>
       <TouchableOpacity
-        style={[styles.statusButton, task.completed && styles.completedStatus]}
-        onPress={() => onToggleStatus(task.id)}
+        style={[styles.statusButton, task.status && styles.completedStatus]}
+        onPress={() => onToggleStatus(task.taskId)}
       >
-        {task.completed && <Text style={styles.checkmark}>✓</Text>}
+        {task.status && <Text style={styles.checkmark}>✓</Text>}
       </TouchableOpacity>
 
-      <Text style={[styles.taskText, task.completed && styles.completedText]}>
+      <Text style={[styles.taskText, task.status && styles.completedText]}>
         {task.title}
       </Text>
 
@@ -44,7 +47,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
         <TouchableOpacity
           style={styles.deleteButton}
-          onPress={() => onDeletePress(task.id)}
+          onPress={() => onDeletePress(task.taskId)}
         >
           <Text style={styles.deleteButtonText}>Delete</Text>
         </TouchableOpacity>

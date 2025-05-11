@@ -6,8 +6,8 @@ export const createTask = async (req: Request, res: Response) => {
     try {
         const { ownerId, title, description } = req.body;
         if (!ownerId || !title) {
-             res.status(400).json({ message: "Missing required fields" });
-             return
+            res.status(400).json({ message: "Missing required fields" });
+            return;
         }
 
         const db = await getMongoDBInstance();
@@ -20,7 +20,7 @@ export const createTask = async (req: Request, res: Response) => {
             description: description || "",
             status: "pending",
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
         };
 
         await tasks.insertOne(task);
@@ -34,7 +34,12 @@ export const createTask = async (req: Request, res: Response) => {
 
 export const getTasks = async (req: Request, res: Response) => {
     try {
-        const { ownerId } = req.params;
+        const { ownerId } = req.query; 
+
+        if (!ownerId) {
+            res.status(400).json({ message: "ownerId is required" });
+            return;
+        }
 
         const db = await getMongoDBInstance();
         const tasks = db.collection("tasks");
@@ -49,26 +54,26 @@ export const getTasks = async (req: Request, res: Response) => {
 
 export const editTask = async (req: Request, res: Response) => {
     try {
-        const { taskId } = req.params;
+        const { id } = req.params; 
         const { title, description } = req.body;
 
         const db = await getMongoDBInstance();
         const tasks = db.collection("tasks");
 
         const result = await tasks.updateOne(
-            { taskId },
+            { taskId: id },
             {
                 $set: {
                     title,
                     description,
-                    updatedAt: new Date()
-                }
+                    updatedAt: new Date(),
+                },
             }
         );
 
         if (result.matchedCount === 0) {
-             res.status(404).json({ message: "Task not found" });
-             return
+            res.status(404).json({ message: "Task not found" });
+            return;
         }
 
         res.status(200).json({ message: "Task updated" });
@@ -80,16 +85,16 @@ export const editTask = async (req: Request, res: Response) => {
 
 export const deleteTask = async (req: Request, res: Response) => {
     try {
-        const { taskId } = req.params;
+        const { id } = req.params; 
 
         const db = await getMongoDBInstance();
         const tasks = db.collection("tasks");
 
-        const result = await tasks.deleteOne({ taskId });
+        const result = await tasks.deleteOne({ taskId: id });
 
         if (result.deletedCount === 0) {
-             res.status(404).json({ message: "Task not found" });
-             return
+            res.status(404).json({ message: "Task not found" });
+            return;
         }
 
         res.status(200).json({ message: "Task deleted" });
@@ -101,27 +106,27 @@ export const deleteTask = async (req: Request, res: Response) => {
 
 export const toggleTaskStatus = async (req: Request, res: Response) => {
     try {
-        const { taskId } = req.params;
+        const { id } = req.params; 
 
         const db = await getMongoDBInstance();
         const tasks = db.collection("tasks");
 
-        const task = await tasks.findOne({ taskId });
+        const task = await tasks.findOne({ taskId: id });
 
         if (!task) {
-             res.status(404).json({ message: "Task not found" });
-             return
+            res.status(404).json({ message: "Task not found" });
+            return;
         }
 
         const newStatus = task.status === "pending" ? "done" : "pending";
 
         await tasks.updateOne(
-            { taskId },
+            { taskId: id },
             {
                 $set: {
                     status: newStatus,
-                    updatedAt: new Date()
-                }
+                    updatedAt: new Date(),
+                },
             }
         );
 

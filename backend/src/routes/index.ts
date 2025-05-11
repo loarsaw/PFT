@@ -7,12 +7,10 @@ const router = express.Router();
 
 router.post("/signup", signup);
 router.post("/signin", signin);
-router.get("/get-tasks" , getTasks)
-router.get("/create-task" , createTask)
-router.get("/edit-task" , editTask)
-router.get("/delete-task" , deleteTask)
-router.get("/toggle-task" , toggleTaskStatus)
-
-
+router.get("/tasks", getTasks); 
+router.post("/tasks", createTask); 
+router.put("/tasks/:id", editTask); 
+router.delete("/tasks/:id", deleteTask); 
+router.put("/tasks/:id/toggle", toggleTaskStatus); 
 
 export default router;

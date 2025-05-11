@@ -5,17 +5,16 @@ import axiosInstance from "@/utils/axiosInstance";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  StyleSheet,
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
   Alert,
+  FlatList,
   SafeAreaView,
   StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSelector } from "react-redux";
-
 
 const TaskList: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -37,13 +36,18 @@ const TaskList: React.FC = () => {
   const router = useRouter();
 
   useEffect(() => {
-    fetchTasks();
-  }, [router]);
+    if (userData) {
+      fetchTasks();
+    }
+  }, [router, userData]);
 
   const fetchTasks = useCallback(async () => {
     try {
       const response = await axiosInstance.get("/tasks", {
-        params: { ownerId: userData?.user.uid },
+        params: { ownerId: userData?.user?.uid },
+        headers: {
+          Authorization: `Bearer ${userData?.token}`,
+        },
       });
 
       const normalizedTasks: Task[] = response.data.tasks.map((t: any) => ({
@@ -62,68 +66,108 @@ const TaskList: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [userData?.user.uid]);
+  }, [userData?.user.uid, userData?.token]);
 
-  const addTask = useCallback(async (task: Task) => {
-    try {
-      const response = await axiosInstance.post("/tasks", {
-        title: task.title,
-        ownerId: userData?.user.uid,
-        status: task.status,
-      });
-
-      const newTask: Task = response.data;
-      setTasks((prevTasks) => [...prevTasks, newTask]);
-    } catch (error) {
-      console.error("Error adding task:", error);
-    }
-  }, [userData?.user.uid]);
-
-  const updateTask = useCallback(async (task: Task) => {
-    try {
-      const response = await axiosInstance.put(`/tasks/${task.taskId}`, task);
-      const updatedTask: Task = response.data;
-
-      setTasks((prevTasks) =>
-        prevTasks.map((t) => (t.taskId === task.taskId ? updatedTask : t))
-      );
-    } catch (error) {
-      console.error("Error updating task:", error);
-    }
-  }, []);
-
-  const deleteTask = useCallback((taskId: string) => {
-    Alert.alert("Delete Task", "Are you sure you want to delete this task?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await axiosInstance.delete(`/tasks/${taskId}`);
-            setTasks((prevTasks) =>
-              prevTasks.filter((task) => task.taskId !== taskId)
-            );
-          } catch (error) {
-            console.error("Error deleting task:", error);
+  const addTask = useCallback(
+    async (task: Task) => {
+      try {
+        const response = await axiosInstance.post(
+          "/tasks",
+          {
+            title: task.title,
+            ownerId: userData?.user.uid,
+            status: task.status,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${userData?.token}`,
+            },
           }
+        );
+
+        const newTask: Task = response.data;
+        setTasks((prevTasks) => [...prevTasks, newTask]);
+      } catch (error) {
+        console.error("Error adding task:", error);
+      }
+    },
+    [userData?.user.uid, userData?.token]
+  );
+
+  const updateTask = useCallback(
+    async (task: Task) => {
+      try {
+        const response = await axiosInstance.put(
+          `/tasks/${task.taskId}`,
+          task,
+          {
+            headers: {
+              Authorization: `Bearer ${userData?.token}`, // Add Bearer token here
+            },
+          }
+        );
+        const updatedTask: Task = response.data;
+
+        setTasks((prevTasks) =>
+          prevTasks.map((t) => (t.taskId === task.taskId ? updatedTask : t))
+        );
+      } catch (error) {
+        console.error("Error updating task:", error);
+      }
+    },
+    [userData?.token]
+  );
+
+  const deleteTask = useCallback(
+    (taskId: string) => {
+      Alert.alert("Delete Task", "Are you sure you want to delete this task?", [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await axiosInstance.delete(`/tasks/${taskId}`, {
+                headers: {
+                  Authorization: `Bearer ${userData?.token}`, // Add Bearer token here
+                },
+              });
+              setTasks((prevTasks) =>
+                prevTasks.filter((task) => task.taskId !== taskId)
+              );
+            } catch (error) {
+              console.error("Error deleting task:", error);
+            }
+          },
         },
-      },
-    ]);
-  }, []);
+      ]);
+    },
+    [userData?.token]
+  );
 
-  const toggleTaskStatus = useCallback(async (taskId: string) => {
-    try {
-      const response = await axiosInstance.put(`/tasks/${taskId}/toggle`);
-      const updatedTask: Task = response.data;
+  const toggleTaskStatus = useCallback(
+    async (taskId: string) => {
+      try {
+        const response = await axiosInstance.put(
+          `/tasks/${taskId}/toggle`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${userData?.token}`,
+            },
+          }
+        );
+        const updatedTask: Task = response.data;
 
-      setTasks((prevTasks) =>
-        prevTasks.map((t) => (t.taskId === taskId ? updatedTask : t))
-      );
-    } catch (error) {
-      console.error("Error toggling status:", error);
-    }
-  }, []);
+        setTasks((prevTasks) =>
+          prevTasks.map((t) => (t.taskId === taskId ? updatedTask : t))
+        );
+      } catch (error) {
+        console.error("Error toggling status:", error);
+      }
+    },
+    [userData?.token]
+  );
 
   const handleSubmit = useCallback(
     (task: Task) => {
@@ -144,7 +188,7 @@ const TaskList: React.FC = () => {
   const handleAddPress = useCallback(() => {
     setCurrentTask({ ...emptyTask, ownerId: userData?.user.uid });
     setModalVisible(true);
-  }, [userData?.user.uid]);
+  }, [userData?.user]);
 
   const stats = useMemo(() => {
     const completed = tasks.filter((t) => t.status).length;
@@ -161,7 +205,8 @@ const TaskList: React.FC = () => {
 
       <View style={styles.stats}>
         <Text style={styles.statsText}>
-          Total: {stats.total} | Completed: {stats.completed} | Pending: {stats.pending}
+          Total: {stats.total} | Completed: {stats.completed} | Pending:{" "}
+          {stats.pending}
         </Text>
       </View>
 
@@ -201,7 +246,6 @@ const TaskList: React.FC = () => {
     </SafeAreaView>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f5f5f5" },

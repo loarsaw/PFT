@@ -7,7 +7,7 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
-import { Provider as StoreProvider } from "react-redux";
+import { Provider } from "react-redux";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { store } from "@/redux/store";
@@ -24,17 +24,17 @@ function RootLayout() {
   }
 
   return (
-    <StoreProvider store={store}>
+    <Provider store={store}>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen
             name="(auth)"
             options={{
               headerShown: false,
-              title: "Home",
+              title: "AUTH",
             }}
           />
-           <Stack.Screen
+          <Stack.Screen
             name="(task)"
             options={{
               headerShown: false,
@@ -44,7 +44,7 @@ function RootLayout() {
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>
-    </StoreProvider>
+    </Provider>
   );
 }
 export default RootLayout;

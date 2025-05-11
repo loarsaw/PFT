@@ -12,13 +12,13 @@ import {
   SafeAreaView,
   StatusBar,
 } from "react-native";
+import { useSelector } from "react-redux";
 
 interface Task {
   id: string;
   title: string;
   completed: boolean;
 }
-
 
 const TaskList: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -29,15 +29,25 @@ const TaskList: React.FC = () => {
     title: "",
     completed: false,
   });
-
+  const userData = useSelector((state: any) => state.user);
+  console.log(userData, "userData");
   useEffect(() => {
     fetchTasks();
   }, []);
 
   const fetchTasks = async () => {
     try {
-      const response = await axiosInstance.get("/tasks");
-      setTasks(response.data);
+      const response = await axiosInstance.get("/tasks", {
+        params: { ownerId: userData?.user.uid },
+      });
+
+      const normalizedTasks = response.data.tasks.map((t: any) => ({
+        id: t.taskId,
+        title: t.title,
+        completed: t.status === "done",
+      }));
+
+      setTasks(normalizedTasks);
     } catch (error) {
       console.error("Error fetching tasks:", error);
     } finally {

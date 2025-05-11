@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 
 export const createTask = async (req: Request, res: Response) => {
     try {
-        const { ownerId, title, description } = req.body;
+        const { ownerId, title, status } = req.body;
         if (!ownerId || !title) {
             res.status(400).json({ message: "Missing required fields" });
             return;
@@ -17,8 +17,7 @@ export const createTask = async (req: Request, res: Response) => {
             taskId: uuidv4(),
             ownerId,
             title,
-            description: description || "",
-            status: "pending",
+            status: status,
             createdAt: new Date(),
             updatedAt: new Date(),
         };
@@ -34,7 +33,7 @@ export const createTask = async (req: Request, res: Response) => {
 
 export const getTasks = async (req: Request, res: Response) => {
     try {
-        const { ownerId } = req.query; 
+        const { ownerId } = req.query;
 
         if (!ownerId) {
             res.status(400).json({ message: "ownerId is required" });
@@ -54,8 +53,8 @@ export const getTasks = async (req: Request, res: Response) => {
 
 export const editTask = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params; 
-        const { title, description } = req.body;
+        const { id } = req.params;
+        const { title, status } = req.body;
 
         const db = await getMongoDBInstance();
         const tasks = db.collection("tasks");
@@ -65,7 +64,7 @@ export const editTask = async (req: Request, res: Response) => {
             {
                 $set: {
                     title,
-                    description,
+                    status,
                     updatedAt: new Date(),
                 },
             }
@@ -85,7 +84,7 @@ export const editTask = async (req: Request, res: Response) => {
 
 export const deleteTask = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params; 
+        const { id } = req.params;
 
         const db = await getMongoDBInstance();
         const tasks = db.collection("tasks");
@@ -106,7 +105,7 @@ export const deleteTask = async (req: Request, res: Response) => {
 
 export const toggleTaskStatus = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params; 
+        const { id } = req.params;
 
         const db = await getMongoDBInstance();
         const tasks = db.collection("tasks");

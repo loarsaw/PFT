@@ -1,6 +1,6 @@
 import { login } from "@/redux/slice/user";
 import axiosInstance from "@/utils/axiosInstance";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
@@ -17,29 +17,30 @@ const Login = () => {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const router = useRouter();
+  const handleLogin = async () => {
+    try {
+      const response = await axiosInstance.post("/signin", {
+        email,
+        password,
+      });
 
-const handleLogin = async () => {
-  try {
-    const response = await axiosInstance.post("/signin", {
-      email,
-      password,
-    });
+      const { user, token } = response.data;
+      dispatch(login({ user, token }));
+      router.replace("/");
 
-    const { user, token } = response.data;
-    dispatch(login({ user, token }));
-
-    Alert.alert("Success", "Logged in successfully");
-  } catch (error: any) {
-    if (error?.response?.status === 401) {
-      Alert.alert("Login Failed", "Either email or password is incorrect");
-    } else {
-      const msg =
-        error?.response?.data?.message || "Something went wrong. Please try again.";
-      Alert.alert("Login Failed", msg);
+      Alert.alert("Success", "Logged in successfully");
+    } catch (error: any) {
+      if (error?.response?.status === 401) {
+        Alert.alert("Login Failed", "Either email or password is incorrect");
+      } else {
+        const msg =
+          error?.response?.data?.message ||
+          "Something went wrong. Please try again.";
+        Alert.alert("Login Failed", msg);
+      }
     }
-  }
-};
-
+  };
 
   return (
     <View style={styles.container}>
